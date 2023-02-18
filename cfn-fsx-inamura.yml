@@ -1,0 +1,442 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: FSx Create
+# ------------------------------------------------------------#
+#  Metadata
+# ------------------------------------------------------------#
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "NetWork Configuration"
+        Parameters:
+          - VpcCidrPrefix
+      - Label:
+          default: "MicrosoftAD Configuration"
+        Parameters:
+          - MicrosoftAdDomainName
+          - MicrosoftPassword
+      - Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - Ec2Image-amazonlinuxId
+          - EC2Image-WindowsID
+          - MyIP
+          - KeyName
+      - Label:
+          default: "Tags"
+        Parameters:
+          - UserName
+        
+# ------------------------------------------------------------#
+#  InputParameters
+# ------------------------------------------------------------#
+Parameters:
+  VpcCidrPrefix:
+    Type: String
+    Description: '(Example: 10.22)'
+    Default: 192.168
+
+  MicrosoftAdDomainName:
+    Type: String
+    Description: 'MicrosoftAdDomainName'
+    Default: inamura.local
+
+  MicrosoftAdPassword:
+    Type: String
+    NoEcho: True
+    Default: P@ssw0rd
+
+  Ec2ImageAmazonlinuxId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+  EC2ImageWindowsID:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-windows-latest/Windows_Server-2016-Japanese-Full-Base
+
+  MyIP:
+    Type: String
+    Description: 'My IP'
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: inamura
+
+  UserName:
+    Type: String
+    Description: 'TagsName'
+    Default: inamura
+
+
+# ------------------------------------------------------------#
+#  VPC
+# ------------------------------------------------------------#
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Sub '${VpcCidrPrefix}.0.0/16'
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-vpc'
+        - Key: UserName
+          Value: !Ref UserName
+# ------------------------------------------------------------#
+#  IGW
+# ------------------------------------------------------------#
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-igw'
+
+  VPCGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGW
+# ------------------------------------------------------------#
+#  Public Subnet
+# ------------------------------------------------------------#
+  PublicSubnetA: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.10.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-public-a"
+        - Key: User
+          Value: !Ref UserName
+
+  PublicSubnetB: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.20.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-public-b"
+        - Key: User
+          Value: !Ref UserName
+
+# ------------------------------------------------------------#
+#  Private Subnet
+# ------------------------------------------------------------#
+  PrivateSubnetA: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.30.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-a"
+        - Key: User
+          Value: !Ref UserName
+
+  PrivateSubnetB: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.40.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-b"
+        - Key: User
+          Value: !Ref UserName
+
+  PrivateSubnetC: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.50.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-c"
+        - Key: User
+          Value: !Ref UserName
+
+  PrivateSubnetD: 
+    Type: "AWS::EC2::Subnet"
+    Properties: 
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Sub '${VpcCidrPrefix}.60.0/24'
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-private-d"
+        - Key: User
+          Value: !Ref UserName
+# ------------------------------------------------------------#
+#  Public RouteTable
+# ------------------------------------------------------------#
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-public-routetable'
+        - Key: User
+          Value: !Ref UserName
+
+# ------------------------------------------------------------#
+# Routing
+# ------------------------------------------------------------#
+  PublicRoute: 
+    Type: "AWS::EC2::Route"
+    Properties: 
+      RouteTableId: !Ref PublicRouteTable 
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref IGW
+
+  VpcPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  VpcPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+# ------------------------------------------------------------#
+#  Private RouteTable
+# ------------------------------------------------------------#
+  PrivateRouteTable: 
+    Type: "AWS::EC2::RouteTable"
+    Properties: 
+      VpcId: !Ref VPC 
+      Tags: 
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-private-routetable'
+        - Key: User
+          Value: !Ref UserName
+
+  PrivateSubnetARouteTableAssociation: 
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetARouteTableAssociation: 
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      SubnetId: !Ref PrivateSubnetB
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetARouteTableAssociation: 
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      SubnetId: !Ref PrivateSubnetC
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetARouteTableAssociation: 
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      SubnetId: !Ref PrivateSubnetD
+      RouteTableId: !Ref PrivateRouteTable
+# ------------------------------------------------------------#
+#  MicrosoftAD
+# ------------------------------------------------------------#        
+  MicrosoftAD:
+    Type: AWS::DirectoryService::MicrosoftAD
+    Properties:
+      Name: !Ref MicrosoftAdDomainName
+      Password: !Ref MicrosoftAdPassword
+      VpcSettings:
+        SubnetIds:
+          - !Ref PrivateSubnetA
+          - !Ref PrivateSubnetB
+        VpcId: !Ref VPC
+      Edition: Standard
+
+  DHCPOptions:
+    Type: AWS::EC2::DHCPOptions
+    Properties:
+      DomainName: !Ref MicrosoftAdDomainName
+      DomainNameServers: !GetAtt MicrosoftAD.DnsIpAddresses
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-dhcp-options'
+
+  VPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      DhcpOptionsId: !Ref DHCPOptions
+      VpcId: !Ref VPC
+
+# ------------------------------------------------------------#
+#  SG EC2 Windows&Linux
+# ------------------------------------------------------------#
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${AWS::StackName}-ec2-sg'
+      GroupName: !Sub '${AWS::StackName}-ec2-sg'
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: !GetAtt VPC.CidrBlock
+          Description: allow all access from vpc
+          IpProtocol: "-1"
+          FromPort: 0
+          ToPort: 65535
+        - CidrIp: !Ref MyIP
+          Description: allow all access from MyIP
+          IpProtocol: "-1"
+          FromPort: 0
+          ToPort: 65535
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: UserName
+          Value: !Ref UserName
+# ------------------------------------------------------------#
+#  IAM EC2 Windows&Linux
+# ------------------------------------------------------------#
+  Ec2IamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - 'arn:aws:iam::aws:policy/AmazonSSMDirectoryServiceAccess'
+      RoleName: !Sub '${AWS::StackName}-iamrole'
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2IamRole
+# ------------------------------------------------------------#
+#  EC2 Windows
+# ------------------------------------------------------------#
+  EC2Windows:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      ImageId: !Ref EC2ImageWindowsID
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref Ec2SecurityGroup
+      SsmAssociations:
+        - AssociationParameters:
+            - Key: directoryId
+              Value:
+                - !Ref MicrosoftAD
+            - Key: directoryName
+              Value:
+                - !Ref MicrosoftAdDomainName
+          DocumentName: JoinDirectoryServiceDomain
+      SubnetId: !Ref PublicSubnetA
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-windows'
+        - Key: UserName
+          Value: !Ref UserName
+
+  EC2Linux:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      ImageId: !Ref Ec2ImageAmazonlinuxId
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref Ec2SecurityGroup
+      SsmAssociations:
+        - AssociationParameters:
+            - Key: directoryId
+              Value:
+                - !Ref MicrosoftAD
+            - Key: directoryName
+              Value:
+                - !Ref MicrosoftAdDomainName
+          DocumentName: JoinDirectoryServiceDomain
+      SubnetId: !Ref PublicSubnetB
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-windows'
+        - Key: UserName
+          Value: !Ref UserName
+
+# ------------------------------------------------------------#
+#  SG FSx
+# ------------------------------------------------------------#
+  FSXSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${AWS::StackName}-fsx-sg'
+      GroupName: !Sub '${AWS::StackName}-fsx-sg'
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: !GetAtt VPC.CidrBlock
+          Description: allow all access from vpc
+          IpProtocol: "-1"
+      VpcId: !Ref VPC
+
+# ------------------------------------------------------------#
+#  FSx
+# ------------------------------------------------------------#
+  FSX:
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: WINDOWS
+      SubnetIds:
+        - !Ref PrivateSubnet3
+        - !Ref PrivateSubnet4
+      SecurityGroupIds:
+        - !GetAtt FSXSecurityGroup.GroupId
+      StorageCapacity: 32
+      StorageType: SSD
+      WindowsConfiguration:
+        ActiveDirectoryId: !Ref MicrosoftAD
+        AutomaticBackupRetentionDays: 0
+        DeploymentType: MULTI_AZ_1
+        PreferredSubnetId: !Ref PrivateSubnet3
+        ThroughputCapacity: 8
+      Tags:        
+        - Key: UserName
+          Value: !Ref UserName

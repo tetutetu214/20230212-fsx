@@ -212,17 +212,17 @@ Resources:
       DestinationCidrBlock: "0.0.0.0/0"
       GatewayId: !Ref IGW
 
-  VpcPublicSubnet1RouteTableAssociation:
+  VpcPublicSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTable
 
-  VpcPublicSubnet1RouteTableAssociation:
+  VpcPublicSubnetBRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnetB
+      RouteTableId: !Ref PublicRouteTable
 # ------------------------------------------------------------#
 #  Private RouteTable
 # ------------------------------------------------------------#

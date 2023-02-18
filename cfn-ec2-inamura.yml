@@ -82,7 +82,7 @@ Resources:
           Description: Allow all outbound traffic by default
           IpProtocol: "-1"
       SecurityGroupIngress:
-        - CidrIp: 192.168.0.0/16
+        - CidrIp: !Sub '${VpcCidrPrefix}.0.0/16'
           Description: allow all access from vpc
           IpProtocol: "-1"
           FromPort: "-1"
@@ -92,7 +92,7 @@ Resources:
           IpProtocol: "-1"
           FromPort: "-1"
           ToPort: "-1"
-      VpcId: vpc-02cc415e24238bc62
+      VpcId: !ImportValue vpc-inamura
       Tags: 
         - Key: UserName
           Value: !Ref UserName
@@ -122,13 +122,13 @@ Resources:
 # ------------------------------------------------------------#
 #  EC2 Windows
 # ------------------------------------------------------------#
-  EC2Linux:
+  EC2Windows:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: !Select
-        - 1
+        - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
-      ImageId: !Ref Ec2ImageAmazonlinuxId
+      ImageId: !Ref EC2ImageWindowsID
       IamInstanceProfile: !Ref Ec2InstanceProfile
       InstanceInitiatedShutdownBehavior: stop
       InstanceType: t2.micro
@@ -136,20 +136,20 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
-          SubnetId: subnet-091f20d2c99e12ec5
+          SubnetId: !ImportValue privatesubnet-inamura
           GroupSet:
             - !Ref Ec2SecurityGroup
-      SsmAssociations:
-        - AssociationParameters:
-            - Key: directoryId
-              Value:
-                - d-95677edefe
-            - Key: directoryName
-              Value:
-                - !Ref MicrosoftAdDomainName
-          DocumentName: JoinDirectoryServiceDomain
+      # SsmAssociations:
+      #   - AssociationParameters:
+      #       - Key: directoryId
+      #         Value:
+      #           - !Ref MicrosoftAD
+      #       - Key: directoryName
+      #         Value:
+      #           - !Ref MicrosoftAdDomainName
+      #     DocumentName: AWS-JoinDirectoryServiceDomain
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-linux'
+          Value: !Sub '${AWS::StackName}-windows'
         - Key: UserName
           Value: !Ref UserName

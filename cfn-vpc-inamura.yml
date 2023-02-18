@@ -288,3 +288,23 @@ Resources:
     Properties:
       DhcpOptionsId: !Ref DHCPOptions
       VpcId: !Ref VPC
+
+# ------------------------------------------------------------#
+# Output Parameters
+# ------------------------------------------------------------#                
+Outputs:
+# VPC
+  VPC:
+    Value: !Ref VPC
+    Export:
+      Name: "vpc-inamura"
+
+  PublicSubnet:
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: "publicsubnet-inamura"
+
+  MSAD:
+    Value: !Ref MicrosoftAD
+    Export:
+      Name: "msad-inamura"

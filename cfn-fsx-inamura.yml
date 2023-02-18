@@ -56,8 +56,8 @@ Parameters:
 
   MyIP:
     Type: String
-    Description: 'MyIP + /32'
-    Default: X.X.X.X/32
+    Description: 'MyIP'
+    Default: 60.73.219.138
 
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -307,7 +307,7 @@ Resources:
           IpProtocol: "-1"
           FromPort: "-1"
           ToPort: "-1"
-        - CidrIp: !Ref MyIP
+        - CidrIp: !Sub '${MyIP}/32'
           Description: allow all access from MyIP
           IpProtocol: "-1"
           FromPort: "-1"
@@ -353,8 +353,12 @@ Resources:
       InstanceInitiatedShutdownBehavior: stop
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      SecurityGroupIds:
-        - !Ref Ec2SecurityGroup
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnetA
+          GroupSet:
+            - !Ref Ec2SecurityGroup
       SsmAssociations:
         - AssociationParameters:
             - Key: directoryId
@@ -364,7 +368,6 @@ Resources:
               Value:
                 - !Ref MicrosoftAdDomainName
           DocumentName: JoinDirectoryServiceDomain
-      SubnetId: !Ref PublicSubnetA
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-windows'
@@ -382,8 +385,12 @@ Resources:
       InstanceInitiatedShutdownBehavior: stop
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      SecurityGroupIds:
-        - !Ref Ec2SecurityGroup
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnetB
+          GroupSet:
+            - !Ref Ec2SecurityGroup
       SsmAssociations:
         - AssociationParameters:
             - Key: directoryId
@@ -393,10 +400,9 @@ Resources:
               Value:
                 - !Ref MicrosoftAdDomainName
           DocumentName: JoinDirectoryServiceDomain
-      SubnetId: !Ref PublicSubnetB
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-windows'
+          Value: !Sub '${AWS::StackName}-linux'
         - Key: UserName
           Value: !Ref UserName
 

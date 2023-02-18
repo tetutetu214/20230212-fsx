@@ -241,19 +241,19 @@ Resources:
       SubnetId: !Ref PrivateSubnetA
       RouteTableId: !Ref PrivateRouteTable
 
-  PrivateSubnetARouteTableAssociation: 
+  PrivateSubnetBRouteTableAssociation: 
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties: 
       SubnetId: !Ref PrivateSubnetB
       RouteTableId: !Ref PrivateRouteTable
 
-  PrivateSubnetARouteTableAssociation: 
+  PrivateSubnetCRouteTableAssociation: 
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties: 
       SubnetId: !Ref PrivateSubnetC
       RouteTableId: !Ref PrivateRouteTable
 
-  PrivateSubnetARouteTableAssociation: 
+  PrivateSubnetDRouteTableAssociation: 
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties: 
       SubnetId: !Ref PrivateSubnetD
@@ -425,8 +425,8 @@ Resources:
     Properties:
       FileSystemType: WINDOWS
       SubnetIds:
-        - !Ref PrivateSubnet3
-        - !Ref PrivateSubnet4
+        - !Ref PrivateSubnetC
+        - !Ref PrivateSubnetD
       SecurityGroupIds:
         - !GetAtt FSXSecurityGroup.GroupId
       StorageCapacity: 32
@@ -435,7 +435,7 @@ Resources:
         ActiveDirectoryId: !Ref MicrosoftAD
         AutomaticBackupRetentionDays: 0
         DeploymentType: MULTI_AZ_1
-        PreferredSubnetId: !Ref PrivateSubnet3
+        PreferredSubnetId: !Ref PrivateSubnetC
         ThroughputCapacity: 8
       Tags:        
         - Key: UserName

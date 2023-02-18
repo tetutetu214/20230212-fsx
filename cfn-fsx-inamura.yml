@@ -70,9 +70,12 @@ Parameters:
 
 
 # ------------------------------------------------------------#
-#  VPC
+#  Resources
 # ------------------------------------------------------------#
 Resources:
+# ------------------------------------------------------------#
+#  VPC
+# ------------------------------------------------------------#
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -343,6 +346,7 @@ Resources:
 #  EC2 Windows
 # ------------------------------------------------------------#
   EC2Windows:
+    DependsOn: FSx
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: !Select
@@ -367,14 +371,17 @@ Resources:
             - Key: directoryName
               Value:
                 - !Ref MicrosoftAdDomainName
-          DocumentName: JoinDirectoryServiceDomain
+          DocumentName: AWS-JoinDirectoryServiceDomain
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-windows'
         - Key: UserName
           Value: !Ref UserName
-
+# ------------------------------------------------------------#
+#  EC2 Linux
+# ------------------------------------------------------------#
   EC2Linux:
+    DependsOn: EC2Windows
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: !Select
@@ -391,15 +398,6 @@ Resources:
           SubnetId: !Ref PublicSubnetB
           GroupSet:
             - !Ref Ec2SecurityGroup
-      SsmAssociations:
-        - AssociationParameters:
-            - Key: directoryId
-              Value:
-                - !Ref MicrosoftAD
-            - Key: directoryName
-              Value:
-                - !Ref MicrosoftAdDomainName
-          DocumentName: JoinDirectoryServiceDomain
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-linux'
@@ -427,7 +425,7 @@ Resources:
 # ------------------------------------------------------------#
 #  FSx
 # ------------------------------------------------------------#
-  FSX:
+  FSx:
     Type: AWS::FSx::FileSystem
     Properties:
       FileSystemType: WINDOWS

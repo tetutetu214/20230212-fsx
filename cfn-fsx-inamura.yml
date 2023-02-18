@@ -56,7 +56,8 @@ Parameters:
 
   MyIP:
     Type: String
-    Description: 'My IP'
+    Description: 'MyIP + /32'
+    Default: X.X.X.X/32
 
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -304,13 +305,13 @@ Resources:
         - CidrIp: !GetAtt VPC.CidrBlock
           Description: allow all access from vpc
           IpProtocol: "-1"
-          FromPort: 0
-          ToPort: 65535
+          FromPort: "-1"
+          ToPort: "-1"
         - CidrIp: !Ref MyIP
           Description: allow all access from MyIP
           IpProtocol: "-1"
-          FromPort: 0
-          ToPort: 65535
+          FromPort: "-1"
+          ToPort: "-1"
       VpcId: !Ref VPC
       Tags: 
         - Key: UserName

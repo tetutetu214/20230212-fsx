@@ -85,12 +85,14 @@ Resources:
         - CidrIp: 192.168.0.0/16
           Description: allow all access from vpc
           IpProtocol: "-1"
+          FromPort: "-1"
+          ToPort: "-1"
         - CidrIp: !Sub '${MyIP}/32'
           Description: allow all access from MyIP
           IpProtocol: "-1"
           FromPort: "-1"
           ToPort: "-1"
-      VpcId: vpc-00e90815edf7d03d2
+      VpcId: vpc-02cc415e24238bc62
       Tags: 
         - Key: UserName
           Value: !Ref UserName
@@ -134,14 +136,14 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
-          SubnetId: subnet-0f934cdf6d154c307
+          SubnetId: subnet-091f20d2c99e12ec5
           GroupSet:
             - !Ref Ec2SecurityGroup
       SsmAssociations:
         - AssociationParameters:
             - Key: directoryId
               Value:
-                - d-95677ede96
+                - d-95677edefe
             - Key: directoryName
               Value:
                 - !Ref MicrosoftAdDomainName

@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: FSx Create
+# ------------------------------------------------------------#
+#  Metadata
+# ------------------------------------------------------------#
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "NetWork Configuration"
+        Parameters:
+          - VpcCidrPrefix
+      - Label:
+          default: "MicrosoftAD Configuration"
+        Parameters:
+          - MicrosoftAdDomainName
+          - MicrosoftPassword
+      - Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - Ec2Image-amazonlinuxId
+          - EC2Image-WindowsID
+          - MyIP
+          - KeyName
+      - Label:
+          default: "Tags"
+        Parameters:
+          - UserName
+        
+# ------------------------------------------------------------#
+#  InputParameters
+# ------------------------------------------------------------#
+Parameters:
+  VpcCidrPrefix:
+    Type: String
+    Description: '(Example: 10.22)'
+    Default: 192.168
+
+  MicrosoftAdDomainName:
+    Type: String
+    Description: 'MicrosoftAdDomainName'
+    Default: inamura.local
+
+  MicrosoftAdPassword:
+    Type: String
+    NoEcho: True
+    Default: P@ssw0rd
+
+  Ec2ImageAmazonlinuxId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+  EC2ImageWindowsID:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-windows-latest/Windows_Server-2016-Japanese-Full-Base
+
+  MyIP:
+    Type: String
+    Description: 'MyIP'
+    Default: 60.73.219.138
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: inamura
+
+  UserName:
+    Type: String
+    Description: 'TagsName'
+    Default: inamura
+
+Resources:
+# ------------------------------------------------------------#
+#  SG EC2 Windows&Linux
+# ------------------------------------------------------------#
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${AWS::StackName}-ec2-sg'
+      GroupName: !Sub '${AWS::StackName}-ec2-sg'
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 192.168.0.0/16
+          Description: allow all access from vpc
+          IpProtocol: "-1"
+        - CidrIp: !Sub '${MyIP}/32'
+          Description: allow all access from MyIP
+          IpProtocol: "-1"
+          FromPort: "-1"
+          ToPort: "-1"
+      VpcId: vpc-00e90815edf7d03d2
+      Tags: 
+        - Key: UserName
+          Value: !Ref UserName
+# ------------------------------------------------------------#
+#  IAM EC2 Windows&Linux
+# ------------------------------------------------------------#
+  Ec2IamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - 'arn:aws:iam::aws:policy/AmazonSSMDirectoryServiceAccess'
+      RoleName: !Sub '${AWS::StackName}-iamrole'
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2IamRole
+# ------------------------------------------------------------#
+#  EC2 Windows
+# ------------------------------------------------------------#
+  EC2Linux:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      ImageId: !Ref Ec2ImageAmazonlinuxId
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: subnet-0f934cdf6d154c307
+          GroupSet:
+            - !Ref Ec2SecurityGroup
+      SsmAssociations:
+        - AssociationParameters:
+            - Key: directoryId
+              Value:
+                - d-95677ede96
+            - Key: directoryName
+              Value:
+                - !Ref MicrosoftAdDomainName
+          DocumentName: JoinDirectoryServiceDomain
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-linux'
+        - Key: UserName
+          Value: !Ref UserName
